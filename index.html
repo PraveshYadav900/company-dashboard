@@ -259,7 +259,7 @@
         function getRandomName() {
             const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
             const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-            return ${firstName} ${lastName};
+            return `${firstName} ${lastName}`;
         }
         
         function generateSpecificData(count) {
@@ -369,7 +369,7 @@
                     specialNamesUsed++;
                 } else {
                     name = getRandomName();
-                    location = ${cities[Math.floor(Math.random() * cities.length)]}, ${employeesToGenerate[i].location};
+                    location = `${cities[Math.floor(Math.random() * cities.length)]}, ${employeesToGenerate[i].location}`;
                 }
 
                 const employee = {
@@ -383,7 +383,7 @@
                     exitDate: exitDate ? exitDate.toISOString().split('T')[0] : null,
                     status: status,
                     hardWorkScore: Math.floor(Math.random() * 100) + 1,
-                    bio: This employee has been a dedicated and valued member of the team. They have contributed significantly to key projects and have consistently demonstrated a strong work ethic.,
+                    bio: `This employee has been a dedicated and valued member of the team. They have contributed significantly to key projects and have consistently demonstrated a strong work ethic.`,
                     awards: [],
                 };
                 if (Math.random() > 0.9) {
@@ -454,7 +454,7 @@
             while (currentDate <= new Date()) {
                 const year = currentDate.getFullYear();
                 const month = currentDate.getMonth();
-                const key = ${year}-${String(month+1).padStart(2, '0')};
+                const key = `${year}-${String(month+1).padStart(2, '0')}`;
                 
                 const hiresThisMonth = ALL_EMPLOYEES.filter(emp => {
                     const joinDate = new Date(emp.joinDate);
@@ -575,7 +575,7 @@
                                     const value = context.raw;
                                     const total = context.dataset.data.reduce((acc, current) => acc + current, 0);
                                     const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
-                                    label += ${value} (${percentage}%);
+                                    label += `${value} (${percentage}%)`;
                                     return label;
                                 }
                             }
@@ -633,7 +633,7 @@
                                     const value = context.raw;
                                     const total = context.dataset.data.reduce((acc, current) => acc + current, 0);
                                     const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
-                                    label += ${value} (${percentage}%);
+                                    label += `${value} (${percentage}%)`;
                                     return label;
                                 }
                             }
@@ -680,7 +680,7 @@
                                     const value = context.raw;
                                     const total = context.dataset.data.reduce((acc, current) => acc + current, 0);
                                     const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
-                                    label += ${value} (${percentage}%);
+                                    label += `${value} (${percentage}%)`;
                                     return label;
                                 }
                             }
@@ -740,7 +740,7 @@
                                     const value = context.raw;
                                     const total = context.dataset.data.reduce((acc, current) => acc + current, 0);
                                     const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
-                                    label += ${value} (${percentage}%);
+                                    label += `${value} (${percentage}%)`;
                                     return label;
                                 }
                             }
@@ -805,9 +805,9 @@
             const awardsHtml = employee.awards.length > 0 ? 
                 `<h4 class="text-lg font-semibold text-slate-700">Awards & Recognition</h4>
                 <ul class="list-disc list-inside space-y-1 text-sm text-slate-500">
-                    ${employee.awards.map(a => <li>${a.title} (${a.year})</li>).join('')}
+                    ${employee.awards.map(a => `<li>${a.title} (${a.year})</li>`).join('')}
                 </ul>` : 
-                <p class="text-sm text-slate-500">Koi award nahi hai.</p>;
+                `<p class="text-sm text-slate-500">Koi award nahi hai.</p>`;
 
             const modalContent = `
                 <div class="text-center mb-4">
