@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aone Faculty & Engineering HR Dashboard</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* A light, professional background */
+            color: #1a202c;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        @media (min-width: 1024px) {
+            .container {
+                grid-template-columns: 250px 1fr;
+            }
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 1.5rem;
+            transition: all 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .employee-list {
+            height: calc(100vh - 150px);
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #94a3b8 #e2e8f0;
+        }
+        .employee-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .employee-list::-webkit-scrollbar-track {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+        .employee-list::-webkit-scrollbar-thumb {
+            background-color: #94a3b8;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+        }
+        .list-item {
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            border-radius: 0.5rem;
+        }
+        .list-item:hover {
+            background-color: #e2e8f0;
+            transform: translateX(5px);
+        }
+        .chart-container {
+            position: relative;
+            height: 350px;
+        }
+        #employeeModal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+        }
+        #employeeModal .modal-content {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 700px;
+            animation: fadeIn 0.3s ease-in-out;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .time-filter-btn {
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        .time-filter-btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+</head>
+<body class="bg-slate-100">
+
+    <!-- Employee Details ka Modal -->
+    <div id="employeeModal" class="hidden">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modalTitle" class="text-2xl font-bold text-slate-800">Employee Details</h3>
+                <button id="closeModal" class="text-slate-500 hover:text-slate-800 text-3xl font-light leading-none">&times;</button>
+            </div>
+            <div id="modalBody" class="space-y-4">
+                <!-- Employee details yahan dikhayi jayengi -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Layout -->
+    <div class="container lg:grid-cols-[250px_1fr]">
+        <!-- Employee List Sidebar -->
+        <div class="card h-full">
+            <h2 class="text-2xl font-bold text-slate-800 mb-4">Employees</h2>
+            <div class="mb-4">
+                <input type="text" id="searchInput" placeholder="Employee khoje..." class="w-full px-4 py-2 rounded-lg border-2 border-slate-200 focus:outline-none focus:border-sky-500 transition-colors">
+            </div>
+            <div id="employeeList" class="employee-list space-y-2 pr-2">
+                <!-- Employee ke naam dynamically add kiye jayenge -->
+            </div>
+        </div>
+        
+        <!-- Main Dashboard Content -->
+        <div>
+            <!-- Header Section -->
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                <div>
+                    <h1 class="text-4xl font-bold text-slate-800">HR Dashboard</h1>
+                    <p class="text-lg text-slate-500 mt-1">Aone Faculty & Engineering</p>
+                </div>
+            </header>
+
+            <!-- Timeframe Filters -->
+            <div class="flex flex-wrap gap-2 mb-6">
+                <button data-timeframe="allTime" class="time-filter-btn bg-sky-600 text-white font-semibold py-2 px-4 rounded-full shadow-lg hover:bg-sky-700 transition">All Time</button>
+                <button data-timeframe="5y" class="time-filter-btn bg-white text-slate-600 font-semibold py-2 px-4 rounded-full shadow-md hover:bg-slate-50 transition">5 Years</button>
+                <button data-timeframe="1y" class="time-filter-btn bg-white text-slate-600 font-semibold py-2 px-4 rounded-full shadow-md hover:bg-slate-50 transition">1 Year</button>
+                <button data-timeframe="1m" class="time-filter-btn bg-white text-slate-600 font-semibold py-2 px-4 rounded-full shadow-md hover:bg-slate-50 transition">1 Month</button>
+                <button data-timeframe="1w" class="time-filter-btn bg-white text-slate-600 font-semibold py-2 px-4 rounded-full shadow-md hover:bg-slate-50 transition">1 Week</button>
+            </div>
+
+            <!-- Main Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="card text-center bg-white shadow-lg">
+                    <h2 class="text-xl font-semibold text-slate-600">Total Employees</h2>
+                    <p id="totalEmployees" class="text-4xl font-bold text-indigo-600 mt-2">0</p>
+                </div>
+                <div class="card text-center bg-white shadow-lg">
+                    <h2 class="text-xl font-semibold text-slate-600">New Hires</h2>
+                    <p id="newHires" class="text-4xl font-bold text-green-600 mt-2">0</p>
+                </div>
+                <div class="card text-center bg-white shadow-lg">
+                    <h2 class="text-xl font-semibold text-slate-600">Resignations</h2>
+                    <p id="resignations" class="text-4xl font-bold text-red-600 mt-2">0</p>
+                </div>
+                <div class="card text-center bg-white shadow-lg">
+                    <h2 class="text-xl font-semibold text-slate-600">Active</h2>
+                    <p id="activeEmployees" class="text-4xl font-bold text-blue-600 mt-2">0</p>
+                </div>
+            </div>
+
+            <!-- Main Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Employee Growth Chart -->
+                <div class="card">
+                    <h2 class="text-lg font-semibold text-slate-700 mb-4">Employees ki Growth</h2>
+                    <div class="chart-container">
+                        <canvas id="employeeGrowthChart"></canvas>
+                    </div>
+                </div>
+                <!-- Hires vs. Exits Chart -->
+                <div class="card">
+                    <h2 class="text-lg font-semibold text-slate-700 mb-4">Hires vs. Exits</h2>
+                    <div class="chart-container">
+                        <canvas id="hiresExitsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Demographic Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+                <!-- Gender Breakdown Chart -->
+                <div class="card">
+                    <h2 class="text-lg font-semibold text-slate-700 mb-4">Gender Distribution</h2>
+                    <div class="chart-container">
+                        <canvas id="genderChart"></canvas>
+                    </div>
+                </div>
+                <!-- Location Breakdown Chart -->
+                <div class="card">
+                    <h2 class="text-lg font-semibold text-slate-700 mb-4">Location Breakdown</h2>
+                    <div class="chart-container">
+                        <canvas id="locationChart"></canvas>
+                    </div>
+                </div>
+                <!-- Age Group Chart -->
+                <div class="card">
+                    <h2 class="text-lg font-semibold text-slate-700 mb-4">Age Group Analysis</h2>
+                    <div class="chart-container">
+                        <canvas id="ageChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Departmental Breakdown & Top Employee Lists -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                <!-- Department Breakdown Chart -->
+                <div class="card">
+                    <h2 class="text-lg font-semibold text-slate-700 mb-4">Department wise Employee Details</h2>
+                    <div class="chart-container">
+                        <canvas id="departmentChart"></canvas>
+                    </div>
+                </div>
+                <!-- Top Employee Lists -->
+                <div class="flex flex-col gap-6">
+                    <div class="card">
+                        <h2 class="text-lg font-semibold text-slate-700 mb-4">Hamesha Best Employees ✨</h2>
+                        <div id="awardedEmployeesList" class="space-y-4">
+                            <!-- Hamesha Best employees yahan aayenge -->
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h2 class="text-lg font-semibold text-slate-700 mb-4">Top 10 Hard Workers 🚀</h2>
+                        <div id="topHardWorkersList" class="space-y-4">
+                            <!-- Top hard workers yahan dikhayi jayenge -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Footer -->
+        <footer class="col-span-1 lg:col-span-2 text-center text-slate-500 py-4 mt-8">
+            <p class="text-sm">Dashboard created by Pravesh Yadav</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- Data Generation Functions ---
+        const firstNames = ["Aarav", "Aman", "Priya", "Rahul", "Sneha", "Anjali", "Vikram", "Meera", "Rohit", "Geeta", "Sanjay", "Nisha", "Karan", "Sonali", "Ramesh", "Aditi", "Manish", "Kavita", "Deepak", "Pooja", "Ajay", "Swati", "Naveen", "Divya", "Vinay", "Sangeeta", "Pranav", "Shreya", "Arjun", "Neha"];
+        const lastNames = ["Sharma", "Yadav", "Gupta", "Singh", "Patel", "Kumar", "Choudhary", "Mehta", "Bhatia", "Das", "Joshi", "Verma", "Rao", "Pandey", "Shah", "Malhotra", "Roy", "Agarwal", "Mishra", "Tiwari", "Sinha", "Jain", "Goyal", "Dubey", "Rathore", "Dutta", "Nair", "Iyer", "Kaur", "Khan"];
+        const specialNames = { "Pravesh Yadav": "Rewari, Haryana", "Biresh Yadav": "Jaipur, Rajasthan" };
+        const cities = ["Gurugram", "Pune", "Bengaluru", "Delhi", "Mumbai", "Chennai", "Kolkata", "Hyderabad", "Ahmedabad", "Lucknow", "Surat", "Patna", "Indore"];
+        const departments = ["Engineering", "Faculty", "HR", "Sales", "Marketing", "Finance"];
+        const statuses = ["Active", "Resigned", "Fired", "Blacklisted"];
+        const awards = ["Employee of the Year", "Innovation Award", "Sales Champion", "Leadership Excellence", "Rookie of the Year"];
+
+        function getRandomName() {
+            const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+            const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+            return ${firstName} ${lastName};
+        }
+        
+        function generateSpecificData(count) {
+            const data = [];
+            const today = new Date();
+            let specialNamesUsed = 0;
+            const specialNameKeys = Object.keys(specialNames);
+
+            const locationsWithPercentages = {
+                'Haryana': 0.30,
+                'Rajasthan': 0.27,
+                'Bihar': 0.15,
+                'Uttar Pradesh': 0.10,
+                'Other': 0.18 // 1 - (0.30 + 0.27 + 0.15 + 0.10)
+            };
+            
+            const gendersWithPercentages = {
+                'Male': 0.57,
+                'Female': 0.35,
+                'Other': 0.08 // 1 - (0.57 + 0.35)
+            };
+
+            const ageGroupsWithPercentages = {
+                '18-30': 0.40,
+                '30-40': 0.30,
+                '40-50': 0.20,
+                '50+': 0.10 // 1 - (0.40 + 0.30 + 0.20)
+            };
+
+            const employeesToGenerate = [];
+
+            // Location, Gender, and Age ko pehle se assign kar do
+            for (let i = 0; i < count; i++) {
+                let locationRoll = Math.random();
+                let cumulativeLoc = 0;
+                let locAssigned;
+                for (const loc in locationsWithPercentages) {
+                    cumulativeLoc += locationsWithPercentages[loc];
+                    if (locationRoll <= cumulativeLoc) {
+                        locAssigned = loc;
+                        break;
+                    }
+                }
+                
+                let genderRoll = Math.random();
+                let cumulativeGender = 0;
+                let genderAssigned;
+                for (const gender in gendersWithPercentages) {
+                    cumulativeGender += gendersWithPercentages[gender];
+                    if (genderRoll <= cumulativeGender) {
+                        genderAssigned = gender;
+                        break;
+                    }
+                }
+
+                let ageRoll = Math.random();
+                let cumulativeAge = 0;
+                let ageAssigned;
+                for (const ageGroup in ageGroupsWithPercentages) {
+                    cumulativeAge += ageGroupsWithPercentages[ageGroup];
+                    if (ageRoll <= cumulativeAge) {
+                        ageAssigned = ageGroup;
+                        break;
+                    }
+                }
+                
+                let minAge, maxAge;
+                if (ageAssigned === '50+') {
+                    minAge = 51; maxAge = 65;
+                } else {
+                    minAge = parseInt(ageAssigned.split('-')[0]);
+                    maxAge = parseInt(ageAssigned.split('-')[1]);
+                }
+
+                const randomAge = Math.floor(Math.random() * (maxAge - minAge + 1)) + minAge;
+                
+                employeesToGenerate.push({
+                    location: locAssigned,
+                    gender: genderAssigned,
+                    age: randomAge
+                });
+            }
+
+            // employeesToGenerate array ko shuffle karo
+            for (let i = employeesToGenerate.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [employeesToGenerate[i], employeesToGenerate[j]] = [employeesToGenerate[j], employeesToGenerate[i]];
+            }
+
+            // Final data object banao
+            for (let i = 0; i < count; i++) {
+                const joinDate = new Date(today.getFullYear() - (Math.random() * 10), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1);
+                
+                let exitDate = null;
+                let status = 'Active';
+                if (Math.random() > 0.8) {
+                    const exitDay = new Date(joinDate.getFullYear() + Math.random() * 5, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1);
+                    if (exitDay > today) continue;
+                    exitDate = exitDay;
+                    status = (Math.random() < 0.5) ? 'Resigned' : 'Fired';
+                }
+
+                let name, location;
+                if (specialNamesUsed < specialNameKeys.length) {
+                    name = specialNameKeys[specialNamesUsed];
+                    location = specialNames[name];
+                    specialNamesUsed++;
+                } else {
+                    name = getRandomName();
+                    location = ${cities[Math.floor(Math.random() * cities.length)]}, ${employeesToGenerate[i].location};
+                }
+
+                const employee = {
+                    id: i,
+                    name: name,
+                    location: location,
+                    department: departments[Math.floor(Math.random() * departments.length)],
+                    gender: employeesToGenerate[i].gender,
+                    age: employeesToGenerate[i].age,
+                    joinDate: joinDate.toISOString().split('T')[0],
+                    exitDate: exitDate ? exitDate.toISOString().split('T')[0] : null,
+                    status: status,
+                    hardWorkScore: Math.floor(Math.random() * 100) + 1,
+                    bio: This employee has been a dedicated and valued member of the team. They have contributed significantly to key projects and have consistently demonstrated a strong work ethic.,
+                    awards: [],
+                };
+                if (Math.random() > 0.9) {
+                    employee.awards.push({
+                        title: awards[Math.floor(Math.random() * awards.length)],
+                        year: today.getFullYear() - Math.floor(Math.random() * 3),
+                    });
+                }
+                data.push(employee);
+            }
+            return data;
+        }
+
+
+        const ALL_EMPLOYEES = generateSpecificData(850);
+        let currentData = ALL_EMPLOYEES;
+        let myChart1, myChart2, myChart3, myChart4, myChart5, myChart6;
+
+        function filterData(timeframe) {
+            const now = new Date();
+            let startDate;
+            switch(timeframe) {
+                case '1w': startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); break;
+                case '1m': startDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()); break;
+                case '1y': startDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()); break;
+                case '5y': startDate = new Date(now.getFullYear() - 5, now.getMonth(), now.getDate()); break;
+                default: startDate = new Date(now.getFullYear() - 10, now.getMonth(), now.getDate()); break;
+            }
+            currentData = ALL_EMPLOYEES.filter(emp => {
+                const joinDate = new Date(emp.joinDate);
+                const exitDate = emp.exitDate ? new Date(emp.exitDate) : null;
+                const isHiredInPeriod = joinDate >= startDate && joinDate <= now;
+                const isExitedInPeriod = exitDate && exitDate >= startDate && exitDate <= now;
+                const isActive = emp.status === 'Active' && joinDate <= now && (!exitDate || exitDate >= now);
+                return isHiredInPeriod || isExitedInPeriod || isActive;
+            });
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            renderSummaryCards();
+            renderMainCharts();
+            renderDepartmentChart();
+            renderLocationChart();
+            renderGenderChart();
+            renderAgeChart();
+            renderEmployeeLists(ALL_EMPLOYEES);
+        }
+        
+        function renderSummaryCards() {
+            const totalEmployees = ALL_EMPLOYEES.length;
+            const newHires = currentData.filter(emp => new Date(emp.joinDate).getFullYear() === new Date().getFullYear()).length;
+            const resignations = currentData.filter(emp => emp.status === 'Resigned').length;
+            const activeEmployees = currentData.filter(emp => emp.status === 'Active').length;
+
+            document.getElementById('totalEmployees').innerText = totalEmployees;
+            document.getElementById('newHires').innerText = newHires;
+            document.getElementById('resignations').innerText = resignations;
+            document.getElementById('activeEmployees').innerText = activeEmployees;
+        }
+
+        function renderMainCharts() {
+            const growthData = {};
+            const startDate = new Date(new Date().getFullYear() - 9, 0, 1);
+            let currentDate = new Date(startDate);
+            let activeCount = ALL_EMPLOYEES.filter(emp => new Date(emp.joinDate) < startDate && emp.status === 'Active').length;
+
+            while (currentDate <= new Date()) {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth();
+                const key = ${year}-${String(month+1).padStart(2, '0')};
+                
+                const hiresThisMonth = ALL_EMPLOYEES.filter(emp => {
+                    const joinDate = new Date(emp.joinDate);
+                    return joinDate.getFullYear() === year && joinDate.getMonth() === month;
+                }).length;
+                const exitsThisMonth = ALL_EMPLOYEES.filter(emp => {
+                    const exitDate = emp.exitDate ? new Date(emp.exitDate) : null;
+                    return exitDate && exitDate.getFullYear() === year && exitDate.getMonth() === month;
+                }).length;
+
+                activeCount += hiresThisMonth - exitsThisMonth;
+                growthData[key] = activeCount;
+                currentDate.setMonth(currentDate.getMonth() + 1);
+            }
+
+            const labels = Object.keys(growthData);
+            const dataPoints = Object.values(growthData);
+
+            if (myChart1) myChart1.destroy();
+            const ctx1 = document.getElementById('employeeGrowthChart').getContext('2d');
+            myChart1 = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Active Employees',
+                        data: dataPoints,
+                        borderColor: '#0ea5e9', // Sky-500
+                        backgroundColor: 'rgba(14, 165, 233, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { display: true, title: { display: true, text: 'Time (Year-Month)' } },
+                        y: { display: true, title: { display: true, text: 'Number of Employees' }, beginAtZero: true }
+                    }
+                }
+            });
+
+            const hiresExitsData = {};
+            const years = Array.from(new Set(ALL_EMPLOYEES.map(emp => new Date(emp.joinDate).getFullYear()))).sort();
+            years.forEach(year => hiresExitsData[year] = { hires: 0, exits: 0 });
+            ALL_EMPLOYEES.forEach(emp => {
+                const joinYear = new Date(emp.joinDate).getFullYear();
+                if (hiresExitsData[joinYear]) { hiresExitsData[joinYear].hires++; }
+                if (emp.exitDate) {
+                    const exitYear = new Date(emp.exitDate).getFullYear();
+                    if (hiresExitsData[exitYear]) { hiresExitsData[exitYear].exits++; }
+                }
+            });
+
+            const chart2Labels = Object.keys(hiresExitsData);
+            const hiresCounts = chart2Labels.map(year => hiresExitsData[year].hires);
+            const exitsCounts = chart2Labels.map(year => hiresExitsData[year].exits);
+
+            if (myChart2) myChart2.destroy();
+            const ctx2 = document.getElementById('hiresExitsChart').getContext('2d');
+            myChart2 = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: chart2Labels,
+                    datasets: [
+                        { label: 'Hires', data: hiresCounts, backgroundColor: '#22c55e', borderRadius: 8 },
+                        { label: 'Exits', data: exitsCounts, backgroundColor: '#ef4444', borderRadius: 8 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        function renderDepartmentChart() {
+            const departmentCounts = {};
+            currentData.forEach(emp => {
+                if (emp.status === 'Active') {
+                    departmentCounts[emp.department] = (departmentCounts[emp.department] || 0) + 1;
+                }
+            });
+
+            const labels = Object.keys(departmentCounts);
+            const data = Object.values(departmentCounts);
+            const backgroundColors = [
+                '#3b82f6', // blue
+                '#10b981', // green
+                '#f97316', // orange
+                '#6366f1', // indigo
+                '#a855f7', // purple
+                '#f43f5e'  // pink
+            ];
+
+            if (myChart3) myChart3.destroy();
+            const ctx3 = document.getElementById('departmentChart').getContext('2d');
+            myChart3 = new Chart(ctx3, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        hoverOffset: 4
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((acc, current) => acc + current, 0);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
+                                    label += ${value} (${percentage}%);
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderLocationChart() {
+            const locationCounts = {
+                'Haryana': 0,
+                'Rajasthan': 0,
+                'Bihar': 0,
+                'Uttar Pradesh': 0,
+                'Other': 0
+            };
+            currentData.forEach(emp => {
+                const state = emp.location.split(', ')[1];
+                if (locationCounts.hasOwnProperty(state)) {
+                    locationCounts[state]++;
+                } else {
+                    locationCounts['Other']++;
+                }
+            });
+
+            const labels = Object.keys(locationCounts);
+            const data = Object.values(locationCounts);
+            const backgroundColors = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#64748b'];
+
+            if (myChart4) myChart4.destroy();
+            const ctx4 = document.getElementById('locationChart').getContext('2d');
+            myChart4 = new Chart(ctx4, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((acc, current) => acc + current, 0);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
+                                    label += ${value} (${percentage}%);
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderGenderChart() {
+            const genderCounts = {};
+            currentData.forEach(emp => {
+                genderCounts[emp.gender] = (genderCounts[emp.gender] || 0) + 1;
+            });
+
+            const labels = Object.keys(genderCounts);
+            const data = Object.values(genderCounts);
+            const backgroundColors = ['#3b82f6', '#f472b6', '#94a3b8'];
+
+            if (myChart5) myChart5.destroy();
+            const ctx5 = document.getElementById('genderChart').getContext('2d');
+            myChart5 = new Chart(ctx5, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((acc, current) => acc + current, 0);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
+                                    label += ${value} (${percentage}%);
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function renderAgeChart() {
+            const ageGroups = {
+                '18-30': 0,
+                '30-40': 0,
+                '40-50': 0,
+                '50+': 0
+            };
+            currentData.forEach(emp => {
+                if (emp.age >= 18 && emp.age <= 30) ageGroups['18-30']++;
+                else if (emp.age > 30 && emp.age <= 40) ageGroups['30-40']++;
+                else if (emp.age > 40 && emp.age <= 50) ageGroups['40-50']++;
+                else ageGroups['50+']++;
+            });
+
+            const labels = Object.keys(ageGroups);
+            const data = Object.values(ageGroups);
+            const backgroundColors = ['#3b82f6', '#22c55e', '#f97316', '#ef4444'];
+
+            if (myChart6) myChart6.destroy();
+            const ctx6 = document.getElementById('ageChart').getContext('2d');
+            myChart6 = new Chart(ctx6, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Number of Employees',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                         tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((acc, current) => acc + current, 0);
+                                    const percentage = total > 0 ? ((value / total) * 100).toFixed(2) : 0;
+                                    label += ${value} (${percentage}%);
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
+        function renderEmployeeLists(employees) {
+            const employeeListEl = document.getElementById('employeeList');
+            employeeListEl.innerHTML = '';
+            employees.forEach(emp => {
+                const listItem = document.createElement('div');
+                listItem.className = 'list-item p-3 flex flex-col justify-between';
+                listItem.innerHTML = `
+                    <span class="font-medium text-slate-700">${emp.name}</span>
+                    <span class="text-xs text-slate-400">${emp.department}</span>
+                    <span class="text-xs text-slate-400">${emp.location}</span>
+                `;
+                listItem.addEventListener('click', () => showEmployeeDetails(emp));
+                employeeListEl.appendChild(listItem);
+            });
+
+            const topHardWorkers = ALL_EMPLOYEES.slice().sort((a, b) => b.hardWorkScore - a.hardWorkScore).slice(0, 10);
+            const topHardWorkersListEl = document.getElementById('topHardWorkersList');
+            topHardWorkersListEl.innerHTML = '';
+            topHardWorkers.forEach(emp => {
+                const item = document.createElement('div');
+                item.className = 'flex items-center space-x-2';
+                item.innerHTML = `
+                    <div class="w-2 h-2 rounded-full bg-orange-500"></div>
+                    <span class="font-medium text-slate-700">${emp.name}</span>
+                    <span class="text-sm text-slate-500 ml-auto">Score: ${emp.hardWorkScore}</span>
+                `;
+                topHardWorkersListEl.appendChild(item);
+            });
+
+            const awardedEmployees = ALL_EMPLOYEES.filter(emp => emp.awards.length > 0).sort((a,b) => new Date(b.awards[0].year) - new Date(a.awards[0].year)).slice(0, 5);
+            const awardedEmployeesListEl = document.getElementById('awardedEmployeesList');
+            awardedEmployeesListEl.innerHTML = '';
+            awardedEmployees.forEach(emp => {
+                const item = document.createElement('div');
+                item.className = 'flex items-start space-x-3';
+                item.innerHTML = `
+                    <div class="flex-shrink-0 text-amber-500 text-2xl">🏆</div>
+                    <div>
+                        <span class="font-medium text-slate-700">${emp.name}</span>
+                        <p class="text-sm text-slate-500">${emp.awards[0].title} in ${emp.awards[0].year}</p>
+                    </div>
+                `;
+                awardedEmployeesListEl.appendChild(item);
+            });
+        }
+
+        function showEmployeeDetails(employee) {
+            const modal = document.getElementById('employeeModal');
+            const modalBody = document.getElementById('modalBody');
+            
+            const bio = employee.bio || "Koi bio nahi hai.";
+            const awardsHtml = employee.awards.length > 0 ? 
+                `<h4 class="text-lg font-semibold text-slate-700">Awards & Recognition</h4>
+                <ul class="list-disc list-inside space-y-1 text-sm text-slate-500">
+                    ${employee.awards.map(a => <li>${a.title} (${a.year})</li>).join('')}
+                </ul>` : 
+                <p class="text-sm text-slate-500">Koi award nahi hai.</p>;
+
+            const modalContent = `
+                <div class="text-center mb-4">
+                    <h4 class="text-3xl font-bold text-slate-800">${employee.name}</h4>
+                    <p class="text-lg text-sky-600 mt-1">${employee.department}</p>
+                    <p class="text-sm text-slate-500">${employee.location}</p>
+                </div>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4 text-sm text-slate-500">
+                        <div><strong>Status:</strong> <span class="${employee.status === 'Active' ? 'text-green-500' : employee.status === 'Fired' ? 'text-red-500' : 'text-orange-500'} font-semibold">${employee.status}</span></div>
+                        <div><strong>Join Date:</strong> ${employee.joinDate}</div>
+                        <div><strong>Age:</strong> ${employee.age}</div>
+                        <div><strong>Hard Work Score:</strong> ${employee.hardWorkScore}</div>
+                        <div><strong>Exit Date:</strong> ${employee.exitDate ? employee.exitDate : 'N/A'}</div>
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-semibold text-slate-700">Bio</h4>
+                        <p class="text-sm text-slate-500">${bio}</p>
+                    </div>
+                    <div>${awardsHtml}</div>
+                </div>
+            `;
+            modalBody.innerHTML = modalContent;
+            modal.style.display = 'flex';
+        }
+
+        // Event Listeners and Initialization
+        window.onload = () => {
+            updateDashboard();
+
+            document.getElementById('searchInput').addEventListener('keyup', (e) => {
+                const searchText = e.target.value.toLowerCase();
+                const filteredEmployees = ALL_EMPLOYEES.filter(emp => emp.name.toLowerCase().includes(searchText));
+                renderEmployeeLists(filteredEmployees);
+            });
+
+            document.querySelectorAll('.time-filter-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    document.querySelectorAll('.time-filter-btn').forEach(btn => {
+                        btn.classList.remove('bg-sky-600', 'text-white', 'shadow-lg');
+                        btn.classList.add('bg-white', 'text-slate-600', 'shadow-md');
+                    });
+                    e.target.classList.remove('bg-white', 'text-slate-600', 'shadow-md');
+                    e.target.classList.add('bg-sky-600', 'text-white', 'shadow-lg');
+                    filterData(e.target.dataset.timeframe);
+                });
+            });
+
+            document.getElementById('closeModal').addEventListener('click', () => {
+                document.getElementById('employeeModal').style.display = 'none';
+            });
+        };
+    </script>
+</body>
+</html>
